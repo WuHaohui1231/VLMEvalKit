@@ -10,7 +10,7 @@ from .image_mcq import (
 from .image_mt import MMDUDataset
 from .image_vqa import (
     ImageVQADataset, MathVision, OCRBench, MathVista, LLaVABench, MMVet, MTVQADataset, TableVQABench,
-    CustomVQADataset, CRPE, MathVerse, OlympiadBench, QSpatial, VizWiz, MMNIAH, LogicVista, MME_CoT
+    CustomVQADataset, CRPE, MathVerse, OlympiadBench, QSpatial, VizWiz, MMNIAH, LogicVista, MME_CoT, MMfin
 )
 
 from .image_ccocr import CCOCRDataset
@@ -150,7 +150,7 @@ IMAGE_DATASET = [
     OlympiadBench, WildVision, MMMath, QSpatial, Dynamath, MMGenBench, VizWiz, 
     MMNIAH, CMMMU, VLRewardBench, WeMath, LogicVista, MMMUProDataset, 
     CreationMMBenchDataset, ImageShortQADataset, MMAlignBench, OmniDocBench, 
-    VLM2Bench, VMCBenchDataset, EMMADataset, MME_CoT, MOAT
+    VLM2Bench, VMCBenchDataset, EMMADataset, MME_CoT, MOAT, MMfin
 ]
 
 

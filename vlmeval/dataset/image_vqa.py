@@ -1534,3 +1534,98 @@ class MMNIAH(ImageBaseDataset):
             if element['value'] == '':
                 msgs.remove(element)
         return msgs
+
+class MMfin(ImageBaseDataset):
+    TYPE = 'VQA'
+    DATASET_URL = {
+        'MMfin': 'https://opencompass.openxlab.space/utils/VLMEval/MMfin.tsv'
+    }
+    DATASET_MD5 = {'MMfin': None}
+
+    def build_prompt(self, line):
+        if isinstance(line, int):
+            line = self.data.iloc[line]
+
+        tgt_path = line['image_path']
+        root = LMUDataRoot()
+        tgt_path = osp.join(root, 'images/MMfin', tgt_path)
+
+        prompt = 'You are a financial expert who is well-versed in various financial charts and has extensive financial knowledge. Now you are given a image and corresponding question. Please answer this question.'
+        prompt += '/nThis is question: '
+        prompt += line['question']
+        prompt += '/nHere are the answer requirements: '
+        format_prompt = {
+            'Image Caption':'Describe this image in whole-part structure. Start with a sentence summarizing the main theme of the image. If the image describes multiple objects, firstly introduce each object in one sentence, and if there are some connections between objects, explain every connection in one sentence. If the object is complex, it can be further explained. Your answer should be less than 250 words and should not include any irrelevant information.\n',
+            'OCR':'The answer should conduct an Optical Character Recognition (OCR) analysis on the content asked about. Just answer the question with a single word or phrase if possible. No irrelevant information should be included.\n',
+            'Entity Recognition':'The answer should  contain recognition results of entities mentioned in the question. Just answer the question with a single word or phrase if possible. No irrelevant information should be included.\n',
+            'Spatial Awareness':"The answer should be based on the spatial relationships between entities in the qusition. It is best to provide corresponding evidence for all judgments. If specific numerical answers are not present in the image but can be estimated based on its content, the estimated results can be used. Just provide the answer in one word or a short sentence. No irrelevant information should be included.\n",
+            'Numerical Calculation':'You should perform mathematical calculations based on the information in the image. You need to estimate some values that do not display directly in the image for answering the question. You should show the calculation process and output the calculated result.\n',
+            'Accurate Numerical Calculation':'You should perform mathematical calculations based on the information in the image. You need to provide a step-by-step calculation and obtain a numerical result.\n',
+            'Financial Knowledge':'The answer should be based on financial knowledge. Briefly answer the question within100 words. The answer should not contain irrelevant content related to the picture.\n',
+            'Risk Warning':'You should warn investment risk based on the information in the chart and professional financial knowledge. All your arguments need to be supported by facts or theories and the answer should fall within 150 words.\n',
+            'Investment Advice':'You should provide investment advice based on the information in the chart and professional financial knowledge. All your arguments need to be supported by facts or theories and the answer should fall within 150 words.\n',
+            'Explain Reason':'You should provide explanation based on the information in the chart and professional financial knowledge. All your arguments need to be supported by facts or theories and the answer should fall within 150 words.\n',
+            'Not Applicable':'If you cannot answer, please say "Not Applicable", and provide the explainations.',
+        }
+        prompt += format_prompt[line['task_category']] if line['task_category'] in format_prompt else ''
+        if not pd.isna(line['background']):
+            prompt += 'This is background: '
+            prompt += line['background']
+
+        msgs = []
+        if isinstance(tgt_path, list):
+            msgs.extend([dict(type='image', value=p) for p in tgt_path])
+        else:
+            msgs = [dict(type='image', value=tgt_path)]
+        msgs.append(dict(type='text', value=prompt))
+        return msgs
+    
+    # It returns a DataFrame
+    @classmethod
+    def evaluate(self, eval_file, **judge_kwargs):
+        from .utils.mmfin import MMfin_auxeval, MMfin_acc
+        suffix = eval_file.split('.')[-1]
+        model = judge_kwargs['model']
+        storage = eval_file.replace(f'.{suffix}', f'_{model}.xlsx')
+        tmp_file = eval_file.replace(f'.{suffix}', f'_{model}.pkl')
+        nproc = judge_kwargs.pop('nproc', 4)
+        if not osp.exists(storage):
+            data = load(eval_file)
+            model = build_judge(max_tokens=3, **judge_kwargs)
+            assert model.working(), ('MMfin evaluation requires a working OPENAI API\n' + DEBUG_MESSAGE)
+
+            lt = len(data)
+            lines = [data.iloc[i] for i in range(lt)]
+            tups = [(model, line) for line in lines]
+            indices = [line['index'] for line in lines]
+
+            ans = load(tmp_file) if osp.exists(tmp_file) else {}
+            tups = [x for x, i in zip(tups, indices) if i not in ans]
+            indices = [i for i in indices if i not in ans]
+
+            if len(indices):
+                new_results = track_progress_rich(
+                    MMfin_auxeval,
+                    tups,
+                    nproc=nproc,
+                    chunksize=nproc,
+                    keys=indices,
+                    save=tmp_file,
+                )
+                ans = load(tmp_file)
+                for k, v in zip(indices, new_results):
+                    assert k in ans
+                    assert ans[k]['log'] == v['log'] and ans[k]['score'] == v['score']
+            data['score'] = [ans[idx]['score'] for idx in data['index']]
+            data['log'] = [ans[idx]['log'] for idx in data['index']]
+            dump(data, storage)
+
+        score, score2, score3, total_score = MMfin_acc(storage)
+        score_pth = storage.replace('.xlsx', '_score_task_category.csv')
+        score_pth2 = storage.replace('.xlsx', '_score_image_type.csv')
+        score_pth3 = storage.replace('.xlsx', '_score_image_style.csv')
+
+        dump(score, score_pth)
+        dump(score2, score_pth2)
+        dump(score3, score_pth3)
+        return total_score
