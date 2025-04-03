@@ -125,12 +125,19 @@ class BaseAPI:
                     res.append(dict(type=mime.split('/')[0], value=pth))
             return res
         elif self.check_content(inputs) == 'listdict':
+            # i = 0
             for item in inputs:
+                # print("\nITEM!\n\n", type(i   tem))
+                # print(i)
+                # i += 1
+                # item = item['content'][0]
+                # print(item.keys())
                 assert 'type' in item and 'value' in item
                 mime, s = parse_file(item['value'])
                 if mime is None:
                     assert item['type'] == 'text', item['value']
                 else:
+                    # print("\n\nMIME\n", mime, "\n\n")
                     assert mime.split('/')[0] == item['type']
                     item['value'] = s
             return inputs
@@ -154,6 +161,7 @@ class BaseAPI:
 
     def chat(self, messages, **kwargs1):
         """The main function for multi-turn chatting. Will call `chat_inner` with the preprocessed input messages."""
+        # print("CALLED CHAT")
         assert hasattr(self, 'chat_inner'), 'The API model should has the `chat_inner` method. '
         for msg in messages:
             assert isinstance(msg, dict) and 'role' in msg and 'content' in msg, msg
@@ -222,6 +230,8 @@ class BaseAPI:
         Returns:
             str: The generated answer of the Failed Message if failed to obtain answer.
         """
+        # print("CALLED GENERATE")'
+        # print("MESSAGE: ", self.check_content(message))
         if self.check_content(message) == 'listdict':
             message = self.preprocess_message_with_role(message)
 

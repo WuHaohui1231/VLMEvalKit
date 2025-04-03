@@ -19,6 +19,8 @@ def track_progress_rich(
         keys=None,
         **kwargs) -> list:
 
+    # print("\n\nTASKS\n\n", tasks[0][1], "\n\n\n")
+
     from concurrent.futures import ThreadPoolExecutor
     from tqdm import tqdm
     if save is not None:

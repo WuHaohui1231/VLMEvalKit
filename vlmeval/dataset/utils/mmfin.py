@@ -14,6 +14,7 @@ You are a financial expert who is well-versed in various financial charts and ha
 Now you are given a chart picture, corresponding question, ground truth and prediction.
 Compare the ground truth and prediction from AI models, to give a correctness score for the prediction.
 The final answer must be an integer score. If a decimal is obtained, it can be rounded.
+Please output a single number, which is the final correctness score.
 """
 
 # add requirement
@@ -124,20 +125,34 @@ def MMfin_auxeval(model, line):
     log = ''
     retry = 5
     for i in range(retry):
+        # mes = [{
+        #         'role': 'user',
+        #         'content': [{
+        #             'type': 'text',
+        #             'text': prompt,
+        #         }, {
+        #             'type': 'image_url',
+        #             "image_url": {
+        #                 "url": f"data:image/jpeg;base64,{encode_image(osp.join(LMUDataRoot(), 'images/MMfin', line['image_path']))}"
+        #             }
+        #         }],
+        #     }]
+        
         mes = [{
-                'role': 'user',
-                'content': [{
-                    'type': 'text',
-                    'text': prompt,
-                }, {
-                    'type': 'image_url',
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{encode_image(osp.join(LMUDataRoot(), 'images/MMfin', line['image_path']))}"
-                    }
-                }],
-            }]
-        output = model.generate(mes, temperature=i * 0.5)
+            'role': 'user',
+            'content': [{
+                'type': 'text',
+                'value': prompt,
+            }, {
+                'type': 'image',
+                "value": f"data:image/jpeg;base64,{encode_image(osp.join(LMUDataRoot(), 'images/MMfin', line['image_path']))}"
+            }],
+        }]
+        
+        output = model.chat(mes, temperature=i * 0.5)
+        # print("\n\n\nGOT OUTPUT: \n", output, "\n\n\n")
         score = int_cvt(output.choices[0].message.content)
+        
         if score is None:
             log += f'Try {i}: output is {output}, failed to parse.\n'
         elif score < 0 or score > 5:
@@ -145,6 +160,7 @@ def MMfin_auxeval(model, line):
         else:
             log += f'Try {i}: output is {output}, parse succeed'
             return dict(log=log, score=score)
+        time.sleep(5)
     print(f'All {retry} retries failed.')
     print('log: ',log)
     log += f'All {retry} retries failed.\n'

@@ -73,6 +73,7 @@ class llama_vision(BaseModel):
         else:
             self.model = MllamaForConditionalGeneration.from_pretrained(
                 model_path,
+                # ignore_mismatched_sizes=True,
                 torch_dtype=torch.bfloat16,
                 device_map='cpu',
             ).cuda().eval()
