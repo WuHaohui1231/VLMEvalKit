@@ -1607,7 +1607,7 @@ class MMfin(ImageBaseDataset):
                 new_results = track_progress_rich(
                     MMfin_auxeval,
                     tups,
-                    nproc=nproc,
+                    nproc=1,
                     chunksize=nproc,
                     keys=indices,
                     save=tmp_file,
