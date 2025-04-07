@@ -150,7 +150,7 @@ def MMfin_auxeval(model, line):
         }]
         
         output = model.chat(mes, temperature=i * 0.5)
-        print("\n\n\nGOT OUTPUT: \n", type(output), "\n\n\n")
+        # print("\n\n\nGOT OUTPUT: \n", type(output), "\n\n\n")
         # score = int_cvt(output.choices[0].message.content)
         score = int_cvt(output)
         # time.sleep(5)
