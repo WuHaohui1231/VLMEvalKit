@@ -1053,6 +1053,9 @@ llama_series = {
     "Llama-V-PT-FT": partial(
         llama_vision, model_path="/model/haohui/models/pt-ft/31-30l-nonfreeze-ft"
     ),
+    "Llama-3.2-11B-Vision-Instruct-tatdqa-ft-lv-ins-ori": partial(
+        llama_vision, model_path="/model/haohui/models/pt-ft/Llama-3.2-11B-Vision-Instruct-tatdqa-ft-lv-ins-ori"
+    ),
     "Llama-V-FT-only": partial(
         llama_vision, 
         model_path="/model/haohui/models/pt-ft/ft-only-64r"
